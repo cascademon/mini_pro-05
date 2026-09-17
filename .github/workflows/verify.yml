@@ -1,0 +1,52 @@
+name: Verify book management
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: bookapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Server tests and executable package
+        run: bash gradlew test bootJar --no-daemon --console=plain
+      - name: Test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-results
+          path: |
+            bookapp/build/reports/tests/test/
+            bookapp/build/test-results/test/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Executable package
+        uses: actions/upload-artifact@v4
+        with:
+          name: bookapp-jar
+          path: bookapp/build/libs/*.jar
+          retention-days: 7
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global pnpm@11.19.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm run build

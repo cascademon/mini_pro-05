@@ -11,7 +11,7 @@
 | 역할                  | 담당자      | 담당 업무                                                                                     |
 | ------------------- | -------- | ----------------------------------------------------------------------------------------- |
 | 📋 PM               | 성현욱      | - ERD / API 정의서 작성<br>- README.md 작성<br>- 발표 자료 준비<br>- 통합 이슈 추적                          |
-| ⚙️ 백엔드 개발 1         | 김남효      | - Book Entity 작성<br>- BookRepository 구현<br>- H2 콘솔 확인<br>- Lombok 4종 적용                   |
+| ⚙️ 백엔드 개발 1         | 김남효      | - Book Entity 작성<br>- BookRepository 구현<br>- H2 콘솔 확인<br>- Lombok 적용<br>- AI 표지 생성·예외 처리 참여 |
 | 🛠️ 백엔드 개발 2        | 손가영, 이채현 | - BookService 클래스 구현<br>- 비즈니스 로직 작성<br>- BookNotFoundException 처리<br>- @Transactional 처리 |
 | 🔗 백엔드 개발 3         | 이세은, 조영진 | - BookController 구현<br>- 5종 CRUD 엔드포인트 작성<br>- @Valid + @NotBlank 적용<br>- Postman 테스트     |
 | 🚨 통합 / 예외 처리       | 류연우      | - WebConfig (CORS) 설정<br>- GlobalExceptionHandler 구현<br>- 로드맵 디버깅<br>- 트러블슈팅 정리           |
@@ -119,8 +119,8 @@ cd bookapp
 ### 2. 프론트엔드 실행
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 - 개발 서버: `http://localhost:5173`
 
