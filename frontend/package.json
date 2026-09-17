@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/regressions.test.mjs"
   },
   "dependencies": {
     "json-server": "^0.17.4",
@@ -16,6 +17,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
+    "esbuild": "0.25.12",
+    "jsdom": "30.0.1",
     "vite": "^6.0.0"
   }
 }

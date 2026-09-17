@@ -1,4 +1,5 @@
 # ===== Backend (Spring Boot / Gradle) =====
+frontend/tests/.compiled/
 bookapp/build/
 bookapp/.gradle/
 bookapp/bin/

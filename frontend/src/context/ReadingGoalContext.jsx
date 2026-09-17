@@ -1,11 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const ReadingGoalContext = createContext(null);
 
-const GOALS_KEY = 'readingGoals';
-const ACTIVE_KEY = 'activeGoalId';
-
 export function ReadingGoalProvider({ children }) {
+  const { user } = useAuth();
+  const owner = user?.id == null ? 'guest' : String(user.id);
+  return <UserReadingGoalProvider key={owner} owner={owner}>{children}</UserReadingGoalProvider>;
+}
+
+function UserReadingGoalProvider({ children, owner }) {
+  // 기존 공용 키는 소유자를 알 수 없으므로 특정 계정으로 자동 이전하지 않는다.
+  const GOALS_KEY = `readingGoals:${owner}`;
+  const ACTIVE_KEY = `activeGoalId:${owner}`;
   const [goals, setGoals] = useState(() => {
     try {
       const saved = localStorage.getItem(GOALS_KEY);
@@ -19,12 +26,12 @@ export function ReadingGoalProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
-  }, [goals]);
+  }, [goals, GOALS_KEY]);
 
   useEffect(() => {
     if (activeGoalId) localStorage.setItem(ACTIVE_KEY, String(activeGoalId));
     else localStorage.removeItem(ACTIVE_KEY);
-  }, [activeGoalId]);
+  }, [activeGoalId, ACTIVE_KEY]);
 
   const activeGoal = goals.find((g) => String(g.id) === String(activeGoalId)) || null;
 

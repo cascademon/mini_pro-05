@@ -1,6 +1,13 @@
 package com.aivle.bookapp.controller;
 
 import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,9 +24,21 @@ import java.util.Map;
 @RequestMapping("/ai")
 public class AiCoverController {
 
+    private final RestTemplate restTemplate;
+
+    public AiCoverController() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10_000);
+        factory.setReadTimeout(120_000);
+        this.restTemplate = new RestTemplate(factory);
+    }
+
+    AiCoverController(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     @PostMapping("/cover")
-    public ResponseEntity<Map<String, Object>> generateCover(@RequestBody AiCoverRequest request) {
-        RestTemplate restTemplate = new RestTemplate();
+    public ResponseEntity<Map<String, Object>> generateCover(@Valid @RequestBody AiCoverRequest request) {
 
         String moodsText = request.getMoods() == null || request.getMoods().isEmpty()
                 ? "없음"
@@ -135,18 +154,30 @@ public class AiCoverController {
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-            ResponseEntity<Map> response = restTemplate.postForEntity(
+            ResponseEntity<Map> response;
+            try {
+                response = restTemplate.postForEntity(
                     "https://api.openai.com/v1/images/generations",
                     entity,
                     Map.class
-            );
-
-            List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("data");
-
-            if (data != null && !data.isEmpty()) {
-                String poster = "data:image/png;base64," + data.get(0).get("b64_json");
-                posters.add(poster);
+                );
+            } catch (ResourceAccessException e) {
+                throw new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT,
+                        "표지 생성 서버에 연결하지 못했거나 응답 대기 시간을 초과했습니다.");
+            } catch (RestClientException e) {
+                // 외부 오류 원문에는 요청 정보가 포함될 수 있으므로 반환하지 않는다.
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "표지를 생성하지 못했습니다. API 키와 이용 한도를 확인해 주세요.");
             }
+
+            Object data = response.getBody() == null ? null : response.getBody().get("data");
+            if (!(data instanceof List<?> images) || images.isEmpty()
+                    || !(images.get(0) instanceof Map<?, ?> first)
+                    || !(first.get("b64_json") instanceof String encoded) || encoded.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "표지 생성 서버에서 올바른 이미지 응답을 받지 못했습니다.");
+            }
+            posters.add("data:image/png;base64," + encoded);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -157,11 +188,13 @@ public class AiCoverController {
 
     @Data
     static class AiCoverRequest {
+        @NotBlank(message = "제목은 필수입니다.")
         private String title;
         private String genre;
         private List<String> moods;
         private String description;
         private String coverPrompt;
+        @NotBlank(message = "API 키는 필수입니다.")
         private String apiKey;
     }
 }

@@ -10,6 +10,8 @@ import com.aivle.bookapp.exception.BookNotFoundException;
 import com.aivle.bookapp.repository.BookLikeRepository;
 import com.aivle.bookapp.repository.BookRepository;
 import com.aivle.bookapp.repository.FeedRepository;
+import com.aivle.bookapp.repository.FeedCommentRepository;
+import com.aivle.bookapp.repository.FeedLikeRepository;
 import com.aivle.bookapp.repository.HighlightRepository;
 import com.aivle.bookapp.repository.ReviewRepository;
 import com.aivle.bookapp.repository.UserRepository;
@@ -40,6 +42,8 @@ public class BookService {
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
     private final HighlightRepository highlightRepository;
+    private final FeedCommentRepository feedCommentRepository;
+    private final FeedLikeRepository feedLikeRepository;
 
     // 1. 전체 도서 조회 (휴지통 제외)
     @Transactional(readOnly = true)
@@ -75,12 +79,19 @@ public class BookService {
         book.setLikes(bookDetails.getLikes());
         book.setRepresentativeCoverId(bookDetails.getRepresentativeCoverId());
         book.setIsFavorite(bookDetails.getIsFavorite());
+        List<String> moods = new ArrayList<>(bookDetails.getMoods() == null ? List.of() : bookDetails.getMoods());
+        book.getMoods().clear();
+        book.getMoods().addAll(moods);
 
         return book;
     }
 
     // 5. 도서 정보 부분 수정
     public Book updateBookPartial(Long id, Map<String, Object> updates) {
+        if (updates.containsKey("moods") && (!(updates.get("moods") instanceof List<?> moods)
+                || moods.stream().anyMatch(m -> !(m instanceof String)))) {
+            throw new IllegalArgumentException("분위기는 문자열 목록으로 입력해 주세요.");
+        }
         Book book = getBookById(id);
 
         if (updates.containsKey("title")) {
@@ -185,6 +196,11 @@ public class BookService {
 
     // 10. 영구 삭제 (연관 데이터 함께 정리 → 고아 레코드 방지)
     public void permanentlyDeleteBook(Long id) {
+        List<Long> feedIds = feedRepository.findByBookId(id).stream().map(Feed::getId).toList();
+        if (!feedIds.isEmpty()) {
+            feedCommentRepository.deleteByFeedIdIn(feedIds);
+            feedLikeRepository.deleteByFeedIdIn(feedIds);
+        }
         bookLikeRepository.deleteByBookId(id);
         reviewRepository.deleteByBookId(id);
         highlightRepository.deleteByBookId(id);
@@ -344,6 +360,7 @@ public class BookService {
         copy.setAuthor(original.getAuthor());
         copy.setIsbn(original.getIsbn());
         copy.setGenre(original.getGenre());
+        copy.setMoods(new ArrayList<>(original.getMoods() == null ? List.of() : original.getMoods()));
         copy.setDescription(original.getDescription());
         copy.setPublisher(original.getPublisher());
         copy.setPublishedDate(original.getPublishedDate());
