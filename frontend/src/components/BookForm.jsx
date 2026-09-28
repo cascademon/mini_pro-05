@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/BookForm.css';
 import { DEFAULT_POSTER, MOODS } from '../constants';
+import { useEphemeralApiKey } from '../hooks/useEphemeralApiKey';
 
 const genreOptions = [
   '소설',
@@ -30,7 +31,7 @@ function BookForm({ onAddBook }) {
   const [moods, setMoods] = useState([]);
   const [coverPrompt, setCoverPrompt] = useState('');
   const [poster, setPoster] = useState(DEFAULT_POSTER);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('openaiApiKey') || '');
+  const [apiKey, setApiKey] = useEphemeralApiKey();
   const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
@@ -112,7 +113,6 @@ function BookForm({ onAddBook }) {
 
   const handleApiKeyChange = (value) => {
     setApiKey(value);
-    localStorage.setItem('openaiApiKey', value);
   };
 
   const toggleMood = (selectedMood) => {
