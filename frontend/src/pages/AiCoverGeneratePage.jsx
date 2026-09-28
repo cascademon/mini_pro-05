@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { updateBookCover } from '../api/booksApi';
 import '../styles/AiCoverGeneratePage.css';
 import { DEFAULT_POSTER } from '../constants';
+import { useEphemeralApiKey } from '../hooks/useEphemeralApiKey';
 
 function AiCoverGeneratePage() {
   const navigate = useNavigate();
 
   const [draft, setDraft] = useState(null);
   const [coverPrompt, setCoverPrompt] = useState('');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('openaiApiKey') || '');
+  const [apiKey, setApiKey] = useEphemeralApiKey();
   const [showApiKey, setShowApiKey] = useState(false);
   const [generatedPosters, setGeneratedPosters] = useState([]);
   const [selectedPoster, setSelectedPoster] = useState('');
@@ -36,7 +37,6 @@ function AiCoverGeneratePage() {
 
   const handleApiKeyChange = (value) => {
     setApiKey(value);
-    localStorage.setItem('openaiApiKey', value);
   };
 
   const generatePoster = async () => {
