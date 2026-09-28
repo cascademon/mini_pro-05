@@ -58,7 +58,6 @@ export default function BookDetailSidePanel({
               value={aiApiKey}
               onChange={(e) => {
                 setAiApiKey(e.target.value);
-                localStorage.setItem('openaiApiKey', e.target.value);
               }}
               placeholder="OpenAI API 키 (sk-...)"
             />
