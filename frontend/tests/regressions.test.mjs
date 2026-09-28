@@ -16,7 +16,52 @@ for(const [name,path] of [['AuthContext','src/context/AuthContext.jsx'],['Readin
 }
 const {AuthProvider,useAuth}=await import('./.compiled/AuthContext.mjs');
 const {ReadingGoalProvider,useReadingGoal}=await import('./.compiled/ReadingGoalContext.mjs');
+const {useEphemeralApiKey}=await import('../src/hooks/useEphemeralApiKey.js');
 after(()=>dom.window.close());
+test('API keys are memory-only and cleared after remount', async()=>{
+  localStorage.clear();
+  localStorage.setItem('openaiApiKey','dummy-legacy-key');
+  localStorage.setItem('darkMode','true');
+  let key, setKey;
+  function Probe(){[key,setKey]=useEphemeralApiKey(); return null;}
+  let root=createRoot(document.getElementById('root'));
+  await act(async()=>root.render(React.createElement(Probe)));
+  assert.equal(key,'');
+  assert.equal(localStorage.getItem('openaiApiKey'),null);
+  assert.equal(localStorage.getItem('darkMode'),'true');
+  await act(async()=>setKey('dummy-entered-key'));
+  assert.equal(key,'dummy-entered-key');
+  assert.equal(localStorage.getItem('openaiApiKey'),null);
+  assert.equal(window.sessionStorage.getItem('openaiApiKey'),null);
+  await act(async()=>root.unmount());
+  root=createRoot(document.getElementById('root'));
+  await act(async()=>root.render(React.createElement(Probe)));
+  assert.equal(key,'');
+  await act(async()=>root.unmount());
+});
+test('disabled browser storage does not break API key input', async()=>{
+  const original=window.Storage.prototype.removeItem;
+  window.Storage.prototype.removeItem=()=>{throw new Error('Storage disabled');};
+  let key,setKey;
+  function Probe(){[key,setKey]=useEphemeralApiKey();return null;}
+  const root=createRoot(document.getElementById('root'));
+  try {
+    await act(async()=>root.render(React.createElement(Probe)));
+    await act(async()=>setKey('dummy-only'));
+    assert.equal(key,'dummy-only');
+  } finally {
+    await act(async()=>root.unmount());
+    window.Storage.prototype.removeItem=original;
+  }
+});
+test('all API key screens use the ephemeral hook and never persist the key',async()=>{
+  for(const path of ['src/components/BookForm.jsx','src/pages/AiCoverGeneratePage.jsx','src/pages/BookDetailPage.jsx']){
+    const source=await readFile(path,'utf8');
+    assert.match(source,/= useEphemeralApiKey\(\)/);
+    assert.doesNotMatch(source,/openaiApiKey/);
+  }
+  assert.doesNotMatch(await readFile('src/components/BookDetailSidePanel.jsx','utf8'),/openaiApiKey/);
+});
 test('account switching isolates goals and preserves the old shared data',async()=>{
   localStorage.clear(); localStorage.setItem('readingGoals','[{"id":"legacy"}]');
   let auth,goal;
