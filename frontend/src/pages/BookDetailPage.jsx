@@ -9,6 +9,7 @@ import { getMyBookshelves, assignBookToShelf } from '../api/bookshelfApi';
 import { DEFAULT_POSTER, STATUS_LABEL_TO_API, STATUS_API_TO_LABEL } from '../constants';
 import BookDetailSidePanel from '../components/BookDetailSidePanel';
 import BookDetailModals from '../components/BookDetailModals';
+import { useEphemeralApiKey } from '../hooks/useEphemeralApiKey';
 import '../styles/BookDetailPage.css';
 
 const statusOptions = [
@@ -41,7 +42,7 @@ function BookDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const [aiApiKey, setAiApiKey] = useState(() => localStorage.getItem('openaiApiKey') || '');
+  const [aiApiKey, setAiApiKey] = useEphemeralApiKey();
   const [showAiApiKey, setShowAiApiKey] = useState(false);
   const [aiPosters, setAiPosters] = useState([]);
   const [aiGenerating, setAiGenerating] = useState(false);
